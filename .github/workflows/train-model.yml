@@ -2,6 +2,8 @@ name: Train and Release Model
 
 on:
   workflow_dispatch: 
+  push:
+    branches: [ valmori_model_workflow ]
 
 jobs:
   train-release:
