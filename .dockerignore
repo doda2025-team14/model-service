@@ -1,9 +1,0 @@
-﻿.git
-.venv
-__pycache__
-*.pyc
-.idea
-.vscode
-output
-.gitignore
-README.md
