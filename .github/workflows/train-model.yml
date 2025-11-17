@@ -45,7 +45,7 @@ jobs:
       - name: Create GitHub Release with model
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG_NAME: model-$(date +%Y%m%d-%H%M%S)
+          TAG_NAME: v1.0.0-${{ github.sha }}
         run: |
           gh release create $TAG_NAME \
             --title "Model Release $TAG_NAME" \
