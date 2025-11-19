@@ -41,14 +41,15 @@ jobs:
           BASE_VERSION="${BASE_VERSION#v}"
 
           if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
-            PR_NUMBER=$(jq --raw-output .number "$GITHUB_EVENT_PATH")
-            VERSION="${BASE_VERSION}-pr-${PR_NUMBER}"
+            TIMESTAMP=$(date +'%Y%m%d%H%M%S')
+            VERSION="${BASE_VERSION}-pr-${TIMESTAMP}"
           else
             VERSION="$BASE_VERSION"
           fi
 
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "Final Docker version: $VERSION"
+
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
