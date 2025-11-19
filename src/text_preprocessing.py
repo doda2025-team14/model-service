@@ -4,6 +4,7 @@ Preprocess the data to be trained by the learning algorithm.
 
 import pandas as pd
 import numpy as np
+import os
 
 import string
 import nltk
@@ -15,6 +16,7 @@ from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
 from sklearn.preprocessing import FunctionTransformer
 from sklearn.pipeline import make_union, make_pipeline
 from joblib import dump, load
+
 
 def _load_data():
     messages = pd.read_csv(
@@ -76,6 +78,8 @@ def prepare(message):
     return preprocessor.transform([message])
 
 def main():
+    version = os.getenv("APP_VERSION", "unknown")
+    print(f"Text Preprocessing Module - Version: {version}")
     messages = _load_data()
     print('\n################### Processed Messages ###################\n')
     with pd.option_context('expand_frame_repr', False):
