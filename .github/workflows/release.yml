@@ -3,7 +3,7 @@ name: Backend Docker Release
 on:
   push:
     branches:
-      - main
+      - master
       - 'pr/**'      
   pull_request:
     types:
@@ -19,8 +19,8 @@ jobs:
       packages: write
 
     env:
-      FRONTEND_REPO: org/app
-      FRONTEND_BRANCH: main
+      FRONTEND_REPO: doda2025-team14/app
+      FRONTEND_BRANCH: master
 
     steps:
 
