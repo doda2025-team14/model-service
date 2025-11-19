@@ -2,8 +2,7 @@ name: Release Container Image
 
 on:
   pull_request:
-    tags:
-      - "v*"
+
 
 jobs:
   release:
