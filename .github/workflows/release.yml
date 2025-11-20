@@ -19,8 +19,8 @@ jobs:
       packages: write
 
     env:
-      FRONTEND_REPO: doda2025-team14/app
-      FRONTEND_BRANCH: master
+      APP_REPO: doda2025-team14/app
+      APP_BRANCH: master
 
     steps:
 
@@ -30,8 +30,8 @@ jobs:
       - name: Checkout frontend repo
         uses: actions/checkout@v4
         with:
-          repository: ${{ env.FRONTEND_REPO }}
-          ref: ${{ env.FRONTEND_BRANCH }}
+          repository: ${{ env.APP_REPO }}
+          ref: ${{ env.APP_BRANCH }}
           path: frontend
 
       - name: Extract version
