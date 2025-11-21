@@ -43,6 +43,8 @@ jobs:
       - name: Create GitHub Release with model
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # TODO: The 'v1.0.0' prefix is currently hardcoded.
+          # Ideally, this should be extracted from a project metadata file or git tag.
           TAG_NAME: v1.0.0-${{ github.sha }}
         run: |
           gh release create $TAG_NAME \
