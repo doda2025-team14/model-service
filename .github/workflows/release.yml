@@ -1,0 +1,71 @@
+name: Backend Docker Release
+
+on:
+  push:
+    branches:
+      - master
+      - 'pr/**'      
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    env:
+      APP_REPO: doda2025-team14/app
+      APP_BRANCH: master
+
+    steps:
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Checkout frontend repo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.APP_REPO }}
+          ref: ${{ env.APP_BRANCH }}
+          path: frontend
+
+      - name: Extract version
+        id: version
+        run: |
+          BASE_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout -f frontend/pom.xml)
+          BASE_VERSION="${BASE_VERSION#v}"
+
+          if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
+            TIMESTAMP=$(date +'%Y%m%d%H%M%S')
+            VERSION="${BASE_VERSION}-pr-${TIMESTAMP}"
+          else
+            VERSION="$BASE_VERSION"
+          fi
+
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "Final Docker version: $VERSION"
+
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            --build-arg VERSION=$VERSION \
+            -t ghcr.io/${{ github.repository }}:$VERSION \
+            -t ghcr.io/${{ github.repository }}:latest .
+
+      - name: Push Docker image
+        run: |
+          docker push ghcr.io/${{ github.repository }}:$VERSION
+          docker push ghcr.io/${{ github.repository }}:latest

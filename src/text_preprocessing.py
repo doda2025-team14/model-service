@@ -89,6 +89,8 @@ def prepare(message):
     return preprocessor.transform([message])
 
 def main():
+    version = os.getenv("APP_VERSION", "unknown")
+    print(f"Text Preprocessing Module - Version: {version}")
     messages = _load_data()
     print('\n################### Processed Messages ###################\n')
     with pd.option_context('expand_frame_repr', False):
