@@ -1,0 +1,54 @@
+name: Train and Release Model
+
+on:
+  workflow_dispatch: 
+
+jobs:
+  train-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write 
+      packages: write 
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Create output directory
+        run: mkdir -p output
+
+      - name: Download data
+        run: python src/get_data.py
+
+      - name: Run text preprocessing
+        run: python src/text_preprocessing.py
+
+      - name: Run text classification (training)
+        run: python src/text_classification.py
+        
+      - name: Prepare model artifacts for release
+        run: |
+          tar -czvf model-release.tar.gz output/model.joblib output/preprocessor.joblib
+
+      - name: Create GitHub Release with model
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # TODO: The 'v1.0.0' prefix is currently hardcoded.
+          # Ideally, this should be extracted from a project metadata file or git tag.
+          TAG_NAME: v1.0.0-${{ github.sha }}
+        run: |
+          gh release create $TAG_NAME \
+            --title "Model Release $TAG_NAME" \
+            --notes "Automated model training workflow." \
+            --generate-notes \
+            model-release.tar.gz

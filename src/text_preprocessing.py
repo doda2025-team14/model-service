@@ -4,8 +4,7 @@ Preprocess the data to be trained by the learning algorithm.
 
 import pandas as pd
 import numpy as np
-import os
-
+import os # Import os
 import string
 import nltk
 from nltk.corpus import stopwords
@@ -17,6 +16,9 @@ from sklearn.preprocessing import FunctionTransformer
 from sklearn.pipeline import make_union, make_pipeline
 from joblib import dump, load
 
+MODEL_DIR = os.environ.get('MODEL_DIR', 'output')
+PREPROCESSOR_FILE = os.path.join(MODEL_DIR, 'preprocessor.joblib')
+PREPROCESSED_DATA_FILE = os.path.join(MODEL_DIR, 'preprocessed_data.joblib')
 
 def _load_data():
     messages = pd.read_csv(
@@ -69,12 +71,21 @@ def _preprocess(messages):
     )
 
     preprocessed_data = preprocessor.fit_transform(messages['message'])
-    dump(preprocessor, 'output/preprocessor.joblib')
-    dump(preprocessed_data, 'output/preprocessed_data.joblib')
+    
+    # Ensure MODEL_DIR exists before saving
+    os.makedirs(MODEL_DIR, exist_ok=True)
+    
+    dump(preprocessor, PREPROCESSOR_FILE)
+    dump(preprocessed_data, PREPROCESSED_DATA_FILE)
     return preprocessed_data
 
 def prepare(message):
-    preprocessor = load('output/preprocessor.joblib')
+    # Load preprocessor from the configurable path
+    if not os.path.exists(PREPROCESSOR_FILE):
+        print(f"Error: Preprocessor file not found at {PREPROCESSOR_FILE}")
+        # Handle error appropriately, e.g., return an error response
+        return None 
+    preprocessor = load(PREPROCESSOR_FILE)
     return preprocessor.transform([message])
 
 def main():
@@ -88,3 +99,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    
