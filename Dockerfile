@@ -13,7 +13,7 @@ WORKDIR /app
 COPY ["requirements.txt", "./"]
 RUN ["pip", "install", "--no-cache-dir", "-r", "requirements.txt"]
 COPY ["src", "./src"]
-COPY --from=train /app/output /app/output
+COPY --from=train /app/output /app/model_files
 ENV APP_PORT=8081
 EXPOSE $APP_PORT
 ENTRYPOINT ["python", "src/serve_model.py"]
