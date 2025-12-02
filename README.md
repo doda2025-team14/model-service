@@ -66,7 +66,7 @@ Common flags you may want to add:
   Removes the container after it exits.
 
 * **`-e MODEL_URL=<URL>`**
-  Sets the model download URL (e.g. https://github.com/doda2025-team14/model-service/releases/download/v1.0.0-070ab1a6f395632ee87c14c4ee4a6eb5f85f2c5b/model-release.tar.gz).
+  Sets the model download URL (e.g. https://github.com/doda2025-team14/model-service/releases/download/v1.1.0-09c6efe/model-release.tar.gz).
 
 * **`-e APP_PORT=<PORT>`**
   Changes the server port (default: `8081`). Make sure `-p` matches.
