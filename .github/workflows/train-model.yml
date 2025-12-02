@@ -42,12 +42,12 @@ jobs:
 
       - name: Read version from file
         id: ver
-        run: echo "VERSION=$(cat version.txt)" >> $GITHUB_OUTPUT
+        run: echo "VERSION=$(cat version.txt)-${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release with model
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG_NAME: ${{ steps.ver.outputs.VERSION }}-${{ github.sha::7 }}
+          TAG_NAME: ${{ steps.ver.outputs.VERSION }}
         run: |
           gh release create $TAG_NAME \
             --title "Model Release $TAG_NAME" \
