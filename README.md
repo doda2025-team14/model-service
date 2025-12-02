@@ -38,27 +38,38 @@ Once all dependencies have been installed, the data can be preprocessed and the 
 
 The resulting model files will be placed as `.joblib` files in the `output/` folder.
 
+### Running the Server
 
-### Serving Recommendations
+The easiest way to run the server is by using the docker file.
+First build the Dockerfile into an image that can be used locally using:
+```bash
+docker build -t model-service .
+```
 
-To make the models accessible, you need to start the microservice by running the `src/serve_model.py` script from within the virtual environment that you created before, or in a fresh Docker container (recommended):
+Next you can run your newly created image using:
+```bash
+docker run -it model-service
+```
 
-    $ docker run -it --rm -p 8081:8081 -v ./:/root/sms/ python:3.12.9-slim bash
-    ... (container startup)
-    $ cd /root/sms/
-    $ pip install -r requirements.txt
-    $ python src/serve_model.py
+Common flags you may want to add:
 
-The server will start on port 8081.
-Once its startup has finished, you can either access [localhost:8081/apidocs](http://localhost:8081/apidocs) in your browser to interact with the service, or you send `POST` requests to request predictions, for example with `curl`:
+* **`-v ./output:/app/model_files`**
+  Mounts the trained model into the container.
+
+* **`-p 8081:8081`**
+  Exposes the service to your machine (adjust as needed).
+
+* **`-d`**
+  Runs the container in the background.
+
+* **`--rm`**
+  Removes the container after it exits.
+
+* **`-e MODEL_URL=<URL>`**
+  Sets the model download URL (e.g. https://github.com/doda2025-team14/model-service/releases/download/v1.0.0-070ab1a6f395632ee87c14c4ee4a6eb5f85f2c5b/model-release.tar.gz).
+
+* **`-e APP_PORT=<PORT>`**
+  Changes the server port (default: `8081`). Make sure `-p` matches.
 
 
-    $ curl -X POST "http://localhost:8081/predict" -H "Content-Type: application/json" -d '{"sms": "test ..."}'
-    {
-      "classifier": "decision tree",
-      "result": "ham",
-      "sms": "test ..."
-    }
-change
-
-
+Lastly, to verify that the model is actually running, you can visit [http://localhost:8081/apidocs/#/default](http://localhost:8081/apidocs/#/default) to interact with the API.
