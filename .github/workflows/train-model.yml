@@ -38,14 +38,16 @@ jobs:
         
       - name: Prepare model artifacts for release
         run: |
-          tar -czvf model-release.tar.gz output/model.joblib output/preprocessor.joblib
+          tar -czvf model-release.tar.gz -C output model.joblib preprocessor.joblib
+
+      - name: Read version from file
+        id: ver
+        run: echo "VERSION=$(cat version.txt)" >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release with model
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # TODO: The 'v1.0.0' prefix is currently hardcoded.
-          # Ideally, this should be extracted from a project metadata file or git tag.
-          TAG_NAME: v1.0.0-${{ github.sha }}
+          TAG_NAME: ${{ steps.ver.outputs.VERSION }}-${{ github.sha::7 }}
         run: |
           gh release create $TAG_NAME \
             --title "Model Release $TAG_NAME" \
