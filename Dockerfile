@@ -5,4 +5,5 @@ RUN ["pip", "install", "--no-cache-dir", "-r", "requirements.txt"]
 COPY ["src", "./src"]
 ENV APP_PORT=8081
 EXPOSE $APP_PORT
+ENV MODEL_URL=https://github.com/doda2025-team14/model-service/releases/latest/download/model-release.tar.gz
 ENTRYPOINT ["python", "src/serve_model.py"]
