@@ -16,7 +16,7 @@ from sklearn.preprocessing import FunctionTransformer
 from sklearn.pipeline import make_union, make_pipeline
 from joblib import dump, load
 
-MODEL_DIR = os.environ.get('MODEL_DIR', 'output')
+MODEL_DIR = os.environ.get('MODEL_DIR', '/app/model_files')
 PREPROCESSOR_FILE = os.path.join(MODEL_DIR, 'preprocessor.joblib')
 PREPROCESSED_DATA_FILE = os.path.join(MODEL_DIR, 'preprocessed_data.joblib')
 
