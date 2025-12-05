@@ -13,7 +13,7 @@ import pandas as pd
 from text_preprocessing import prepare, _extract_message_len, _text_process
 
 
-MODEL_DIR = os.environ.get('MODEL_DIR', '/app/model_files')
+MODEL_DIR = os.environ.get('MODEL_DIR', 'output')
 MODEL_URL = os.environ.get('MODEL_URL')
 MODEL_FILE = os.path.join(MODEL_DIR, 'model.joblib')
 PREPROCESSOR_FILE = os.path.join(MODEL_DIR, 'preprocessor.joblib')
