@@ -65,9 +65,13 @@ jobs:
 
       - name: Build and push multi-arch image
         run: |
+          TAGS="-t ghcr.io/${{ github.repository }}:$VERSION -t ghcr.io/${{ github.repository }}:latest"
+          if [[ "${{ github.ref_name }}" == "feature/continuous-experimentation-setup" ]]; then
+            TAGS="$TAGS -t ghcr.io/${{ github.repository }}:experimental"
+          fi
+
           docker buildx build \
             --platform linux/amd64,linux/arm64 \
             --build-arg VERSION=$VERSION \
-            -t ghcr.io/${{ github.repository }}:$VERSION \
-            -t ghcr.io/${{ github.repository }}:latest \
+            $TAGS \
             --push .
