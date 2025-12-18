@@ -70,6 +70,9 @@ jobs:
           if [[ "${{ github.ref_name }}" == "feature/continuous-experimentation-setup" ]]; then
             TAGS="$TAGS -t ghcr.io/${{ github.repository }}:experimental"
           fi
+          if [[ "${{ github.ref_name }}" == "master" ]]; then
+            TAGS="$TAGS -t ghcr.io/${{ github.repository }}:stable"
+          fi
 
           docker buildx build \
             --platform linux/amd64,linux/arm64 \
