@@ -12,7 +12,7 @@ import pandas as pd
 
 from text_preprocessing import prepare, _extract_message_len, _text_process
 
-
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MODEL_DIR = os.environ.get('MODEL_DIR', 'output')
 MODEL_URL = os.environ.get('MODEL_URL')
 MODEL_FILE = os.path.join(MODEL_DIR, 'model.joblib')
@@ -107,6 +107,30 @@ def predict():
     }
     print(res)
     return jsonify(res)
+
+@app.route('/version', methods=['GET'])
+def get_version():
+    """
+    Get the version of the model service.
+    ---
+    responses:
+      200:
+        description: "The version of the model service."
+        schema:
+          type: object
+          properties:
+            version:
+              type: string
+              example: "v1.1.0"
+    """
+    try:
+        # Path to version.txt relative to this file
+        version_file = os.path.join(PROJECT_ROOT, 'version.txt')
+        with open(version_file, 'r') as f:
+            version = f.read().strip()
+        return jsonify({"version": version})
+    except Exception as e:
+        return jsonify({"version": "unknown", "error": str(e)}), 500
 
 if __name__ == '__main__':
 
