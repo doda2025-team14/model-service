@@ -35,23 +35,48 @@ jobs:
           ref: ${{ env.APP_BRANCH }}
           path: frontend
 
-      - name: Extract version
+      - name: Determine version and tags
         id: version
         run: |
+          # Get version from frontend pom.xml (keeps sync)
           BASE_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout -f frontend/pom.xml)
           BASE_VERSION="${BASE_VERSION#v}"
-
-          if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
-            TIMESTAMP=$(date +'%Y%m%d%H%M%S')
-            VERSION="${BASE_VERSION}-pr-${TIMESTAMP}"
-          else
+          BASE_VERSION="${BASE_VERSION%-SNAPSHOT}"
+          
+          BRANCH="${{ github.ref_name }}"
+          SHORT_SHA="${GITHUB_SHA:0:7}"
+          IMAGE="ghcr.io/${{ github.repository }}"
+          
+          # Determine version suffix and semantic tags based on branch
+          if [[ "$BRANCH" == "master" ]]; then
+            # Stable release
             VERSION="$BASE_VERSION"
+            TAGS="-t $IMAGE:$VERSION -t $IMAGE:stable -t $IMAGE:latest"
+            
+          elif [[ "$BRANCH" == feature/* ]] || [[ "$BRANCH" == experiment/* ]]; then
+            # Feature/experiment branch: append branch name + SHA, tag as experimental
+            BRANCH_SLUG=$(echo "$BRANCH" | sed 's|/|-|g' | tr '[:upper:]' '[:lower:]')
+            VERSION="${BASE_VERSION}-${BRANCH_SLUG}-${SHORT_SHA}"
+            TAGS="-t $IMAGE:$VERSION -t $IMAGE:experimental -t $IMAGE:latest"
+            
+          elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            # PR build: append pr number + SHA, no semantic tags
+            PR_NUM="${{ github.event.pull_request.number }}"
+            VERSION="${BASE_VERSION}-pr-${PR_NUM}-${SHORT_SHA}"
+            TAGS="-t $IMAGE:$VERSION"
+            
+          else
+            # Other branches: just version + SHA
+            VERSION="${BASE_VERSION}-${SHORT_SHA}"
+            TAGS="-t $IMAGE:$VERSION -t $IMAGE:latest"
           fi
-
+          
           echo "VERSION=$VERSION" >> $GITHUB_ENV
-          echo "Final Docker version: $VERSION"
+          echo "TAGS=$TAGS" >> $GITHUB_ENV
+          echo "Building version: $VERSION"
+          echo "Tags: $TAGS"
 
-      - name: Set up QEMU #open source machine emulator and virtualiser
+      - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
@@ -66,14 +91,6 @@ jobs:
 
       - name: Build and push multi-arch image
         run: |
-          TAGS="-t ghcr.io/${{ github.repository }}:$VERSION -t ghcr.io/${{ github.repository }}:latest"
-          if [[ "${{ github.ref_name }}" == "feature/continuous-experimentation-setup" ]]; then
-            TAGS="$TAGS -t ghcr.io/${{ github.repository }}:experimental"
-          fi
-          if [[ "${{ github.ref_name }}" == "master" ]]; then
-            TAGS="$TAGS -t ghcr.io/${{ github.repository }}:stable"
-          fi
-
           docker buildx build \
             --platform linux/amd64,linux/arm64 \
             --build-arg VERSION=$VERSION \
