@@ -17,31 +17,20 @@ jobs:
   release:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       packages: write
-
-    env:
-      APP_REPO: doda2025-team14/app
-      APP_BRANCH: master
 
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Checkout frontend repo
-        uses: actions/checkout@v4
-        with:
-          repository: ${{ env.APP_REPO }}
-          ref: ${{ env.APP_BRANCH }}
-          path: frontend
 
       - name: Determine version and tags
         id: version
         run: |
-          # Get version from frontend pom.xml (keeps sync)
-          BASE_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout -f frontend/pom.xml)
+          # Get version from version.txt
+          BASE_VERSION=$(cat version.txt)
           BASE_VERSION="${BASE_VERSION#v}"
-          BASE_VERSION="${BASE_VERSION%-SNAPSHOT}"
           
           BRANCH="${{ github.ref_name }}"
           SHORT_SHA="${GITHUB_SHA:0:7}"
@@ -49,9 +38,13 @@ jobs:
           
           # Determine version suffix and semantic tags based on branch
           if [[ "$BRANCH" == "master" ]]; then
-            # Stable release
-            VERSION="$BASE_VERSION"
+            # Stable release: use base version, increment for next
+            IFS='.' read -r MAJOR MINOR PATCH <<< "$BASE_VERSION"
+            PATCH=$((PATCH + 1))
+            VERSION="$MAJOR.$MINOR.$PATCH"
+            NEXT_VERSION="$MAJOR.$MINOR.$((PATCH + 1))"
             TAGS="-t $IMAGE:$VERSION -t $IMAGE:stable -t $IMAGE:latest"
+            echo "NEXT_VERSION=$NEXT_VERSION" >> $GITHUB_ENV
             
           elif [[ "$BRANCH" == feature/* ]] || [[ "$BRANCH" == experiment/* ]]; then
             # Feature/experiment branch: append branch name + SHA, tag as experimental
@@ -75,6 +68,17 @@ jobs:
           echo "TAGS=$TAGS" >> $GITHUB_ENV
           echo "Building version: $VERSION"
           echo "Tags: $TAGS"
+
+      - name: Commit and Push Version
+        if: github.ref == 'refs/heads/master'
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          echo "v$VERSION" > version.txt
+          git add version.txt
+          git commit -m "chore: bump version to v$VERSION [skip ci]"
+          git tag "v$VERSION"
+          git push origin master --tags
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
