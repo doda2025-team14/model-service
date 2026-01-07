@@ -69,11 +69,20 @@ jobs:
           echo "Building version: $VERSION"
           echo "Tags: $TAGS"
 
+      - name: Generate GitHub App Token
+        if: github.ref == 'refs/heads/master'
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ vars.VERSION_BOT_APP_ID }}
+          private-key: ${{ secrets.VERSION_BOT_PRIVATE_KEY }}
+
       - name: Commit and Push Version
         if: github.ref == 'refs/heads/master'
         run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "version-bot[bot]"
+          git config --global user.email "version-bot[bot]@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/${{ github.repository }}
           echo "v$VERSION" > version.txt
           git add version.txt
           git commit -m "chore: bump version to v$VERSION [skip ci]"
