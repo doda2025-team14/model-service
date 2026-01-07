@@ -24,6 +24,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Determine version and tags
         id: version
@@ -76,6 +77,7 @@ jobs:
         with:
           app-id: ${{ vars.VERSION_BOT_APP_ID }}
           private-key: ${{ secrets.VERSION_BOT_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
 
       - name: Commit and Push Version
         if: github.ref == 'refs/heads/master'
