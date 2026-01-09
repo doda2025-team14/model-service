@@ -6,6 +6,8 @@ import os
 import urllib.request
 import tarfile
 import sys
+import hashlib
+import time
 from flask import Flask, jsonify, request
 from flasgger import Swagger
 import pandas as pd
@@ -18,8 +20,69 @@ MODEL_URL = os.environ.get('MODEL_URL')
 MODEL_FILE = os.path.join(MODEL_DIR, 'model.joblib')
 PREPROCESSOR_FILE = os.path.join(MODEL_DIR, 'preprocessor.joblib')
 
+CACHE_MAX_SIZE = int(os.environ.get('CACHE_MAX_SIZE', '1000'))
+CACHE_TTL_SECONDS = int(os.environ.get('CACHE_TTL_SECONDS', '3600'))  # 1 hour default
+CACHE_FLAG_HEADER = 'X-Cache-Enabled'
+
 app = Flask(__name__)
 swagger = Swagger(app)
+
+# Simple in-memory cache: {message_hash: (prediction, timestamp)}
+prediction_cache = {}
+cache_hits = 0
+cache_misses = 0
+
+def get_cache_key(message):
+    """Generate a cache key from the message content."""
+    return hashlib.sha256(message.encode('utf-8')).hexdigest()
+
+def get_from_cache(cache_key):
+    """Retrieve a prediction from the cache if it exists and is not expired."""
+    global cache_hits, cache_misses
+    
+    if cache_key in prediction_cache:
+        prediction, timestamp = prediction_cache[cache_key]
+        age = time.time() - timestamp
+        
+        if age < CACHE_TTL_SECONDS:
+            cache_hits += 1
+            print(f"[CACHE HIT] Key: {cache_key[:8]}... Age: {age:.2f}s")
+            return prediction
+        else:
+            # Entry expired, remove it. Doing it here for simplicity
+            del prediction_cache[cache_key]
+            print(f"[CACHE EXPIRED] Key: {cache_key[:8]}... Age: {age:.2f}s")
+    
+    cache_misses += 1
+    return None
+
+def add_to_cache(cache_key, prediction):
+    """Add a prediction to the cache."""
+    global prediction_cache
+    
+    # If cache is full, remove oldest entry (simple FIFO eviction)
+    if len(prediction_cache) >= CACHE_MAX_SIZE:
+        oldest_key = next(iter(prediction_cache))
+        del prediction_cache[oldest_key]
+        print(f"[CACHE EVICTION] Removed oldest entry.")
+    
+    prediction_cache[cache_key] = (prediction, time.time())
+    print(f"[CACHE ADD] Key: {cache_key[:8]}")
+
+def get_cache_stats():
+    """Get current cache statistics."""
+    total_requests = cache_hits + cache_misses
+    hit_rate = (cache_hits / total_requests * 100) if total_requests > 0 else 0
+    
+    return {
+        "cache_size": len(prediction_cache),
+        "cache_max_size": CACHE_MAX_SIZE,
+        "cache_ttl_seconds": CACHE_TTL_SECONDS,
+        "cache_hits": cache_hits,
+        "cache_misses": cache_misses,
+        "total_requests": total_requests,
+        "hit_rate_percent": round(hit_rate, 2),
+    }
 
 def download_and_extract_model():
     """
@@ -92,21 +155,51 @@ def predict():
     """
     input_data = request.get_json()
     sms = input_data.get('sms')
-    
+
+    # Check if caching is enabled via feature flag header
+    use_cache = request.headers.get(CACHE_FLAG_HEADER, 'false').lower() == 'true'
+    if use_cache:
+        cache_key = get_cache_key(sms)
+        cached_prediction = get_from_cache(cache_key)
+        if cached_prediction is not None:
+            res = {
+                "result": cached_prediction,
+                "classifier": "decision tree",
+                "sms": sms,
+                "cached": True
+            }
+            print(res)
+            return jsonify(res)
+
     processed_sms = prepare(sms)
     if processed_sms is None:
         return jsonify({"error": "Failed to process SMS"}), 500
         
     model = joblib.load(MODEL_FILE) # Load from the configurable path
     prediction = model.predict(processed_sms)[0]
+
+    if use_cache:
+        add_to_cache(cache_key, prediction)
     
     res = {
         "result": prediction,
         "classifier": "decision tree",
-        "sms": sms
+        "sms": sms,
+        "cached": False
     }
     print(res)
     return jsonify(res)
+
+@app.route('/cache', methods=['GET'])
+def cache_stats():
+    """
+    Get cache statistics.
+    ---
+    responses:
+      200:
+        description: "Cache statistics."
+    """
+    return jsonify(get_cache_stats())
 
 @app.route('/version', methods=['GET'])
 def get_version():
