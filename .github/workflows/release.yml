@@ -47,16 +47,10 @@ jobs:
             VERSION="${BASE_VERSION}-${BRANCH_SLUG}-${SHORT_SHA}"
             TAGS="-t $IMAGE:$VERSION -t $IMAGE:experimental"
             
-          elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            # PR build: append pr number + SHA, no semantic tags
-            PR_NUM="${{ github.event.pull_request.number }}"
-            VERSION="${BASE_VERSION}-pr-${PR_NUM}-${SHORT_SHA}"
-            TAGS="-t $IMAGE:$VERSION"
-            
           else
             # Other branches: just version + SHA
             VERSION="${BASE_VERSION}-${SHORT_SHA}"
-            TAGS="-t $IMAGE:$VERSION -t $IMAGE:latest"
+            TAGS="-t $IMAGE:$VERSION"
           fi
           
           echo "VERSION=$VERSION" >> $GITHUB_ENV
