@@ -5,13 +5,7 @@ on:
   push:
     branches:
       - master
-      - "pr/**"
-      - "feature/**"
-  pull_request:
-    types:
-      - opened
-      - synchronize
-      - reopened
+      - experimental
 
 jobs:
   release:
