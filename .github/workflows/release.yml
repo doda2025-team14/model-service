@@ -47,11 +47,11 @@ jobs:
             TAGS="-t $IMAGE:$VERSION -t $IMAGE:stable -t $IMAGE:latest"
             echo "NEXT_VERSION=$NEXT_VERSION" >> $GITHUB_ENV
             
-          elif [[ "$BRANCH" == feature/* ]] || [[ "$BRANCH" == experiment/* ]]; then
-            # Feature/experiment branch: append branch name + SHA, tag as experimental
+          elif [[ "$BRANCH" == "experimental" ]]; then
+            # Experiment branch: append branch name + SHA, tag as experimental
             BRANCH_SLUG=$(echo "$BRANCH" | sed 's|/|-|g' | tr '[:upper:]' '[:lower:]')
             VERSION="${BASE_VERSION}-${BRANCH_SLUG}-${SHORT_SHA}"
-            TAGS="-t $IMAGE:$VERSION -t $IMAGE:experimental -t $IMAGE:latest"
+            TAGS="-t $IMAGE:$VERSION -t $IMAGE:experimental"
             
           elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
             # PR build: append pr number + SHA, no semantic tags
