@@ -5,13 +5,7 @@ on:
   push:
     branches:
       - master
-      - "pr/**"
-      - "feature/**"
-  pull_request:
-    types:
-      - opened
-      - synchronize
-      - reopened
+      - experimental
 
 jobs:
   release:
@@ -47,22 +41,16 @@ jobs:
             TAGS="-t $IMAGE:$VERSION -t $IMAGE:stable -t $IMAGE:latest"
             echo "NEXT_VERSION=$NEXT_VERSION" >> $GITHUB_ENV
             
-          elif [[ "$BRANCH" == feature/* ]] || [[ "$BRANCH" == experiment/* ]]; then
-            # Feature/experiment branch: append branch name + SHA, tag as experimental
+          elif [[ "$BRANCH" == "experimental" ]]; then
+            # Experiment branch: append branch name + SHA, tag as experimental
             BRANCH_SLUG=$(echo "$BRANCH" | sed 's|/|-|g' | tr '[:upper:]' '[:lower:]')
             VERSION="${BASE_VERSION}-${BRANCH_SLUG}-${SHORT_SHA}"
-            TAGS="-t $IMAGE:$VERSION -t $IMAGE:experimental -t $IMAGE:latest"
-            
-          elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            # PR build: append pr number + SHA, no semantic tags
-            PR_NUM="${{ github.event.pull_request.number }}"
-            VERSION="${BASE_VERSION}-pr-${PR_NUM}-${SHORT_SHA}"
-            TAGS="-t $IMAGE:$VERSION"
+            TAGS="-t $IMAGE:$VERSION -t $IMAGE:experimental"
             
           else
             # Other branches: just version + SHA
             VERSION="${BASE_VERSION}-${SHORT_SHA}"
-            TAGS="-t $IMAGE:$VERSION -t $IMAGE:latest"
+            TAGS="-t $IMAGE:$VERSION"
           fi
           
           echo "VERSION=$VERSION" >> $GITHUB_ENV
