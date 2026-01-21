@@ -68,7 +68,14 @@ def download_and_extract_model():
         sys.exit(1)
 
 @app.route('/metrics', methods=['GET'])
-def metics():
+def metrics():
+    """
+    Get service metrics.
+    ---
+    responses:
+      200:
+        description: "Service metrics."
+    """
     mem = psutil.virtual_memory()
     body = (
         f"backend_cpu_usage_percent {psutil.cpu_percent()}\n"
