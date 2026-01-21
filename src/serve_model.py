@@ -8,7 +8,7 @@ import tarfile
 import sys
 import hashlib
 import time
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, make_response
 from flasgger import Swagger
 import pandas as pd
 import psutil
@@ -132,12 +132,22 @@ def download_and_extract_model():
 
 @app.route('/metrics', methods=['GET'])
 def metics():
+    """
+    Get service metrics.
+    ---
+    responses:
+      200:
+        description: "Service metrics."
+    """
     mem = psutil.virtual_memory()
+    cache_stats = get_cache_stats()
     body = (
         f"backend_cpu_usage_percent {psutil.cpu_percent()}\n"
         f"backend_memory_max_bytes {mem.total}\n"
         f"backend_memory_used_bytes {mem.used}\n"
     )
+    for key in cache_stats.keys():
+        body += f"backend_{key} {cache_stats[key]}\n"
     response = make_response(body, 200)
     response.mimetype = "text/plain"
     return response
@@ -211,7 +221,7 @@ def cache_stats():
       200:
         description: "Cache statistics."
     """
-    return jsonify(get_cache_stats())
+    return jsonify()
 
 @app.route('/version', methods=['GET'])
 def get_version():
