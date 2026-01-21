@@ -6,9 +6,10 @@ import os
 import urllib.request
 import tarfile
 import sys
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, make_response
 from flasgger import Swagger
 import pandas as pd
+import psutil
 
 from text_preprocessing import prepare, _extract_message_len, _text_process
 
@@ -66,6 +67,24 @@ def download_and_extract_model():
         print(f"Error during model download/extraction: {e}", file=sys.stderr)
         sys.exit(1)
 
+@app.route('/metrics', methods=['GET'])
+def metrics():
+    """
+    Get service metrics.
+    ---
+    responses:
+      200:
+        description: "Service metrics."
+    """
+    mem = psutil.virtual_memory()
+    body = (
+        f"backend_cpu_usage_percent {psutil.cpu_percent()}\n"
+        f"backend_memory_max_bytes {mem.total}\n"
+        f"backend_memory_used_bytes {mem.used}\n"
+    )
+    response = make_response(body, 200)
+    response.mimetype = "text/plain"
+    return response
 
 @app.route('/predict', methods=['POST'])
 def predict():
