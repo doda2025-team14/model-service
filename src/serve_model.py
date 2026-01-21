@@ -11,6 +11,7 @@ import time
 from flask import Flask, jsonify, request
 from flasgger import Swagger
 import pandas as pd
+import psutil
 
 from text_preprocessing import prepare, _extract_message_len, _text_process
 
@@ -39,11 +40,11 @@ def get_cache_key(message):
 def get_from_cache(cache_key):
     """Retrieve a prediction from the cache if it exists and is not expired."""
     global cache_hits, cache_misses
-    
+
     if cache_key in prediction_cache:
         prediction, timestamp = prediction_cache[cache_key]
         age = time.time() - timestamp
-        
+
         if age < CACHE_TTL_SECONDS:
             cache_hits += 1
             print(f"[CACHE HIT] Key: {cache_key[:8]}... Age: {age:.2f}s")
@@ -52,20 +53,20 @@ def get_from_cache(cache_key):
             # Entry expired, remove it. Doing it here for simplicity
             del prediction_cache[cache_key]
             print(f"[CACHE EXPIRED] Key: {cache_key[:8]}... Age: {age:.2f}s")
-    
+
     cache_misses += 1
     return None
 
 def add_to_cache(cache_key, prediction):
     """Add a prediction to the cache."""
     global prediction_cache
-    
+
     # If cache is full, remove oldest entry (simple FIFO eviction)
     if len(prediction_cache) >= CACHE_MAX_SIZE:
         oldest_key = next(iter(prediction_cache))
         del prediction_cache[oldest_key]
         print(f"[CACHE EVICTION] Removed oldest entry.")
-    
+
     prediction_cache[cache_key] = (prediction, time.time())
     print(f"[CACHE ADD] Key: {cache_key[:8]}")
 
@@ -73,7 +74,7 @@ def get_cache_stats():
     """Get current cache statistics."""
     total_requests = cache_hits + cache_misses
     hit_rate = (cache_hits / total_requests * 100) if total_requests > 0 else 0
-    
+
     return {
         "cache_size": len(prediction_cache),
         "cache_max_size": CACHE_MAX_SIZE,
@@ -129,6 +130,17 @@ def download_and_extract_model():
         print(f"Error during model download/extraction: {e}", file=sys.stderr)
         sys.exit(1)
 
+@app.route('/metrics', methods=['GET'])
+def metics():
+    mem = psutil.virtual_memory()
+    body = (
+        f"backend_cpu_usage_percent {psutil.cpu_percent()}\n"
+        f"backend_memory_max_bytes {mem.total}\n"
+        f"backend_memory_used_bytes {mem.used}\n"
+    )
+    response = make_response(body, 200)
+    response.mimetype = "text/plain"
+    return response
 
 @app.route('/predict', methods=['POST'])
 def predict():
@@ -180,7 +192,7 @@ def predict():
 
     if use_cache:
         add_to_cache(cache_key, prediction)
-    
+
     res = {
         "result": prediction,
         "classifier": "decision tree",
